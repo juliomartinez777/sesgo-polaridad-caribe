@@ -1,0 +1,29 @@
+{
+  "caribe": {
+    "n": 1093,
+    "macro_f1": 0.6281,
+    "ic95": [
+      0.4455,
+      0.7659
+    ],
+    "n_por_clase": {
+      "positiva": 1045,
+      "neutra": 42,
+      "negativa": 6
+    }
+  },
+  "andina": {
+    "n": 1631,
+    "macro_f1": 0.5831,
+    "ic95": [
+      0.4972,
+      0.6592
+    ],
+    "n_por_clase": {
+      "positiva": 1550,
+      "neutra": 67,
+      "negativa": 14
+    }
+  },
+  "delta_f1_andina_menos_caribe": -0.045
+}

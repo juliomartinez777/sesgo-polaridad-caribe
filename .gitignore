@@ -1,0 +1,9 @@
+# Datos de Rest-Mex: uso académico por solicitud, no se redistribuyen
+data/*.xlsx
+data/*.csv
+# Entornos y cachés
+venv/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+experiments/*/muestra_errores*.csv
