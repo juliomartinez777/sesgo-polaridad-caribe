@@ -9,11 +9,23 @@ from sklearn.metrics import f1_score, classification_report, confusion_matrix
 
 CLASES = ["negativa", "neutra", "positiva"]
 
-def bootstrap_f1(y, yhat, n=1000, seed=42):
-    rng = np.random.default_rng(seed); y = np.asarray(y); yhat = np.asarray(yhat); vals = []
-    for _ in range(n):
-        i = rng.integers(0, len(y), len(y))
-        vals.append(f1_score(y[i], yhat[i], average="macro", labels=CLASES))
+N_BOOT = 1000
+
+def macro_f1_rapido(y, yhat):
+    """Macro-F1 calculado con numpy (equivale a f1_score(average="macro") con las 3 clases)."""
+    f1s = []
+    for c in range(len(CLASES)):
+        tp = np.sum((y == c) & (yhat == c)); fp = np.sum((y != c) & (yhat == c)); fn = np.sum((y == c) & (yhat != c))
+        f1s.append(0.0 if tp == 0 else 2 * tp / (2 * tp + fp + fn))
+    return float(np.mean(f1s))
+
+def bootstrap_f1(y, yhat, n=None, seed=42):
+    """Intervalo de confianza del 95 % del macro-F1 por remuestreo bootstrap."""
+    n = n or N_BOOT
+    idx = {c: i for i, c in enumerate(CLASES)}
+    y = np.array([idx[v] for v in y]); yhat = np.array([idx[v] for v in yhat])
+    rng = np.random.default_rng(seed)
+    vals = [macro_f1_rapido(y[i], yhat[i]) for i in (rng.integers(0, len(y), len(y)) for _ in range(n))]
     return float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
 
 def eval_subgrupo(df, yhat):
@@ -26,15 +38,22 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--semilla", type=int, default=42)
     ap.add_argument("--C", type=float, default=1.0)
+    ap.add_argument("--n_boot", type=int, default=1000, help="remuestreos bootstrap para los intervalos")
     a = ap.parse_args()
+    global N_BOOT
+    N_BOOT = a.n_boot
+    print("1/4 Cargando la partición...", flush=True)
     df = pd.read_csv("data/particion.csv")
     tr, va, te = df[df.split == "train"], df[df.split == "val"], df[df.split == "test"]
     t0 = time.time()
     vec = TfidfVectorizer(ngram_range=(1, 2), min_df=3, max_features=200000, sublinear_tf=True)
+    print("2/4 Vectorizando con TF-IDF...", flush=True)
     Xtr = vec.fit_transform(tr.text)
+    print("3/4 Entrenando la regresión logística...", flush=True)
     clf = LogisticRegression(C=a.C, max_iter=2000, class_weight="balanced", random_state=a.semilla)
     clf.fit(Xtr, tr.clase)
     seg = time.time() - t0
+    print(f"    entrenado en {seg:.0f} s. 4/4 Evaluando y calculando intervalos bootstrap...", flush=True)
     out = {"experimento": "E1_tfidf_lr", "semilla": a.semilla,
            "hiperparametros": {"ngram": [1, 2], "min_df": 3, "max_features": 200000, "C": a.C, "class_weight": "balanced"},
            "tiempo_entrenamiento_s": round(seg, 1), "n_train": int(len(tr))}
