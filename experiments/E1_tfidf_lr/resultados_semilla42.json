@@ -11,7 +11,7 @@
     "C": 1.0,
     "class_weight": "balanced"
   },
-  "tiempo_entrenamiento_s": 7.6,
+  "tiempo_entrenamiento_s": 11.9,
   "n_train": 46683,
   "val": {
     "global": {
